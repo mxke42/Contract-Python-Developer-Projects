@@ -1,0 +1,79 @@
+# function for producing f1 scores based on a varied number of input groupings ('lag', 'num_neurons', 'sequence_len', etc)
+# the function takes an argument, groupby_cols, as a list and sorts the file you are working with
+# over those groups. It then prints a results csv with f1 scores, data points used in f1 score, and
+# the groups attached to each score. POPULATES DATAFRAME ONE ROW AT A TIME
+
+
+def f1_find_groups(filename, use_groupby_cols=None):  #=None specifies that there may be no input
+
+    import pandas as pd
+    from sklearn.metrics import f1_score
+    from neuron_column_function import add_neuron_column
+    import sys
+
+    add_neuron_column(filename)
+
+    if not use_groupby_cols:  # when no arguments are passed into function, these become the arguments
+                              # possible only because of '=None' keyword argument above
+        groupby_cols = ['in_team_members',
+                        'out_team_members',
+                        'net_type',
+                        'lag',
+                        'modes_in',
+                        'modes_out',
+                        'sequence_len',
+                        'num_neurons',  # NOTE change here
+                        'drop_rate',
+                        'miss_allow',
+                        'missing_fill',
+                        'best_model_method',
+                        'model_def'
+                        ]
+    else:
+        groupby_cols = use_groupby_cols #otherwise, use the arguments that have been passed into function
+
+    df = pd.read_csv(filename)
+
+
+#need to examine groupby_cols against the columns in the df to make sure they are all there,
+#values in groupby_col that are not in df need to be removed from list
+    overlap_check = []  # will be list of categories(column titles) from csv
+    final_groupby_cols = []  # will contain values found in both input('groupby_cols') and 'overlap_check'
+    for columns in df:  # creates list of column titles in csv being read
+        overlap_check.append(columns)
+
+    for elem in groupby_cols:
+        if elem in overlap_check:
+            final_groupby_cols.append(elem)
+        else:
+            print("the following groupby category was not found in the"
+                  " document being accessed and testing was stopped")
+            print(elem)
+            sys.exit()
+
+    row_dataframe = pd.DataFrame()  # forming dataframe for later population
+    row = 0
+    for name, group in df.groupby(final_groupby_cols, as_index=False):
+
+        for col in final_groupby_cols:
+            # I am using unique() to find unique values
+            #  and then accessing the only
+            # element in the list by using [0]
+            row_dataframe.at[row, col] = group[col].unique()[0]
+
+        y_true_temp = group['category_actual'].values
+        y_pred_temp = group['category_predicted'].values
+
+        row_dataframe.at[row, 'f1_score'] = f1_score(y_true_temp, y_pred_temp,
+                                                     average='weighted')
+        row_dataframe.at[row, 'data_points'] = len(y_true_temp)
+
+        row += 1  # method for iterating over rows at the same time
+        
+    row_dataframe.to_csv('model_test_preds_test_results1.csv', index=False)
+
+    print(row_dataframe)  # function ends by printing the csv result
+    print(final_groupby_cols)  # prints groups being sorted over
+
+
+f1_find_groups('model_test_preds_test.csv', (['lag', 'num_neurons']))  #code used to test function
