@@ -1,0 +1,94 @@
+# function for producing f1 scores based on a varied number of groupings ('lag', 'num_neurons', 'sequence_len', etc)
+# the function takes an argument, groupby_cols, as a list and sorts the file you are working with
+# over those groups. It then prints a results csv with f1 scores, data points used in f1 score, and
+# the groups attached to each score.
+
+
+def f1_find_groups(filename, use_groupby_cols=None):  # =None specifies that there may be no input
+    import pandas as pd
+    from sklearn.metrics import f1_score
+    from neuron_column_function import add_neuron_column
+
+    add_neuron_column(filename)
+
+    if not use_groupby_cols:  # when no arguments are passed into function, these become the arguments
+        groupby_cols = ['in_team_members',
+                        'out_team_members',
+                        'net_type',
+                        'lag',
+                        'modes_in',
+                        'modes_out',
+                        'sequence_len',
+                        'num_neurons',
+                        'drop_rate',
+                        'miss_allow',
+                        'missing_fill',
+                        'best_model_method',
+                        'model_def'
+                        ]
+    else:
+        groupby_cols = use_groupby_cols # otherwise, use the arguments that have been passed into function
+
+    df = pd.read_csv(filename)
+
+#  need to examine groupby_cols against the columns in the df
+#   to make sure they are all there. Values in groupby_col that
+#   are not in df need to be removed from list
+
+    overlap_check = []       # will contain all categories in csv
+    final_groupby_cols = []  # will contain values being sorted over, excluding categories not in csv
+    for columns in df:       # creates list of column titles in csv being read
+        overlap_check.append(columns)
+
+    for i, n in enumerate(groupby_cols):
+        if n in overlap_check:
+            final_groupby_cols.append(n)
+
+        else:
+            print("the following groupby category was not found in"
+                  " the document being accessed and was not included")
+            print(n)        # prints the category not found in document being accessed
+            pass
+
+# generate lists for creating dataframe based on user input
+    header = {}
+    for i in range(0, (len(final_groupby_cols)-1)):
+        header[final_groupby_cols[i]] = []  # creates lists with titles of groupby_cols values
+
+
+# creating empty columns used to populate df_to_print
+    group_col = []
+    f1_col = []
+    dp_col = []
+
+    # for loop below creates every combination of specified groups within that dataframe,
+    # finds an f1 score for that grouping, and creates lists for later use
+    for name, group in df.groupby(final_groupby_cols, as_index=False):
+
+        group_col.append(name)
+        for i in range(0, (len(final_groupby_cols)-1)):
+            header[final_groupby_cols[i]].append(str(set(group[final_groupby_cols[i]]))[1:-1])
+
+        y_true_temp = list(group['category_actual'])
+        dp_col.append(len(y_true_temp))
+        y_pred_temp = list(group['category_predicted'])
+        f1_temp = f1_score(y_true_temp, y_pred_temp, average='weighted')
+        f1_col.append(f1_temp)
+
+
+# creating dataframe from populated columns with associated labels
+    df_to_print = pd.DataFrame(
+        {'Grouping': group_col, 'f1_score': f1_col, 'data_points': dp_col})
+
+
+# adding grouping columns to df
+    for i in range(0, (len(groupby_cols)-1)):
+        df_to_print[groupby_cols[i]] = header[groupby_cols[i]]
+
+    df_to_print.to_csv('model_test_preds_test_results1.csv', index=False)  # index=False removes extra column produced
+
+    print(df_to_print)              # function ends by printing the csv result
+    print(final_groupby_cols)       # prints the groups being sorted over
+
+
+f1_find_groups('model_test_preds_test.csv', (['lag']))  #code used to test function
