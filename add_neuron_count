@@ -1,0 +1,29 @@
+# function for adding 'num_neurons' column to a csv. Within csv is a column 'model_def'
+# that contains the neuron number which is used to populate the 'num_neurons' column.
+
+
+def add_neuron_column(filename):
+    import pandas as pd
+    path_to_print = filename
+    read = pd.read_csv(filename)          # reads csv into a dataframe titled 'read'
+    model_def = read['model_def'].values  # makes a list of the 'model_def' column in dataframe
+    split_list = list()                   # list used to parse 'model_def' values
+
+    for i, row in enumerate(model_def):
+        split_row = (row.split('_'))      # splits 'model_def' value into a list of multiple
+                                          # values based on '_' locations
+        split_list.append(split_row[2])   # adds 'nn##' to split list
+
+    int_val_list = list()                 # list that will extract just the ## from 'nn##'
+    for i, elem in enumerate(split_list):
+        int_val = elem.replace("nn", "")   # creates an integer only value by replacing nn with '  '
+        int_val_list.append(int(int_val))  # appends this value to the new list and specifies it as an integer
+
+    read['num_neurons'] = int_val_list       # adds a column, 'num_neurons' to read dataframe with values from list
+    read.to_csv(path_to_print, index=False)  # overwrites orginal csv with new dataframe
+                                             # index=False removes extra column produced
+
+if __name__ == "__main__":
+
+    add_neuron_column('output/TB_runs_09032018-152828/model_test_preds_corr_means_old.csv')
+
