@@ -22,7 +22,7 @@ def f1_find_groups(filename, use_groupby_cols=None):  #=None specifies that ther
                         'modes_in',
                         'modes_out',
                         'sequence_len',
-                        'num_neurons',  # NOTE change here
+                        'num_neurons',  
                         'drop_rate',
                         'miss_allow',
                         'missing_fill',
