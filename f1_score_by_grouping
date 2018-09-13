@@ -3,12 +3,12 @@
 # over those groups. It then prints a results csv with f1 scores, data points used in f1 score, and
 # the groups attached to each score.
 
+import pandas as pd
+from sklearn.metrics import f1_score
+from neuron_column_function import add_neuron_column
 
 def f1_find_groups(filename, use_groupby_cols=None):  # =None specifies that there may be no input
-    import pandas as pd
-    from sklearn.metrics import f1_score
-    from neuron_column_function import add_neuron_column
-
+    
     add_neuron_column(filename)
 
     if not use_groupby_cols:  # when no arguments are passed into function, these become the arguments
