@@ -1,9 +1,8 @@
 # function for adding 'num_neurons' column to a csv. Within csv is a column 'model_def'
 # that contains the neuron number which is used to populate the 'num_neurons' column.
 
-
+import pandas as pd
 def add_neuron_column(filename):
-    import pandas as pd
     path_to_print = filename
     read = pd.read_csv(filename)          # reads csv into a dataframe titled 'read'
     model_def = read['model_def'].values  # makes a list of the 'model_def' column in dataframe
@@ -23,6 +22,7 @@ def add_neuron_column(filename):
     read.to_csv(path_to_print, index=False)  # overwrites orginal csv with new dataframe
                                              # index=False removes extra column produced
 
+#method for allowing you to include a testing line in function 
 if __name__ == "__main__":
 
     add_neuron_column('output/TB_runs_09032018-152828/model_test_preds_corr_means_old.csv')
