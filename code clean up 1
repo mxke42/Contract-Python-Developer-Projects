@@ -1,5 +1,5 @@
 ## The following code was present in the middle of a python file. The task was to encompass this process inside a
-## function and also eliminate redundancy. 
+## function, eliminate redundancy, and add minor features.  
 ## Original code was ~230 lines
 ## new code was ~123 lines  (new code starts at line 245)
 
