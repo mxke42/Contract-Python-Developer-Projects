@@ -1,0 +1,368 @@
+## The following code was present in the middle of a python file. The task was to encompass this process inside a
+## function and also eliminate redundancy. 
+## Original code was ~230 lines
+## new code was ~123 lines  (new code starts at line 245)
+
+###this is the original code
+        if best_model_method == 'auc':
+            best_val_loss = 100000.0
+            best_val_index = 0
+            best_method_val = 0
+            best_method_index = 0
+            val_loss_arr = []
+            method_arr = []
+            # define file names
+            best_method_weights_file = models_dir + "{}_{}_{}_{}/best_{}_weights.hdf5".format(
+                model_def, set_name, fold, set_num, best_model_method)
+
+            for i in range(num_epochs):
+            # size_batches = 32
+            # num_epochs = 50
+                model_history = model.fit(x=x_train, y=y_train,
+                                          verbose=0,  # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                          batch_size=size_batches,
+                                          epochs=1,  # set to 1 for use_corr_for_best_model
+                                          validation_data=[x_val, y_val],
+                                          # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                          # callbacks=[best_model_weights, tensorboard],
+                                          )
+
+                # with open('model_history.pickle', 'wb') as pickle_file:
+                #     pickle.dump(model_history.history, pickle_file)
+                # exit()
+                val_preds = model.predict(x_val)
+                method_val = class_utils.roc_auc_score(y_val[:, 1],val_preds[:, 1])
+                method_arr.append(method_val)
+                val_loss = model_history.history['val_loss'][0]
+                val_loss_arr.append(val_loss)
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_val_index = i
+                if method_val > best_method_val:
+                    # print('in corr > at i = ', i)
+                    best_method_val = method_val
+                    best_method_index = i
+                    model.save_weights(best_method_weights_file)
+            best_method_index_file = models_dir + "{}_{}_{}_{}/best_method_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_method_index) + '.pickle'
+            best_valloss_index_file = models_dir + "{}_{}_{}_{}/best_valloss_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_val_index) + '.pickle'
+            with open(best_method_index_file,'wb') as pickle_file:
+                pickle.dump([best_method_index, best_method_val, method_arr], pickle_file)
+            with open(best_valloss_index_file,'wb') as pickle_file:
+                pickle.dump([best_val_index, best_val_loss, val_loss_arr], pickle_file)
+        elif best_model_method == 'f1pos':
+            best_val_loss = 100000.0
+            best_val_index = 0
+            best_method_val = 0
+            best_method_index = 0
+            val_loss_arr = []
+            method_arr = []
+            # define file names
+            best_method_weights_file = models_dir + "{}_{}_{}_{}/best_{}_weights.hdf5".format(
+                model_def, set_name, fold, set_num, best_model_method)
+
+            for i in range(num_epochs):
+            # size_batches = 32
+            # num_epochs = 50
+                model_history = model.fit(x=x_train, y=y_train,
+                                          verbose=0,  # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                          batch_size=size_batches,
+                                          epochs=1,  # set to 1 for use_corr_for_best_model
+                                          validation_data=[x_val, y_val],
+                                          # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                          # callbacks=[best_model_weights, tensorboard],
+                                          )
+
+                # with open('model_history.pickle', 'wb') as pickle_file:
+                #     pickle.dump(model_history.history, pickle_file)
+                # exit()
+                val_preds = model.predict(x_val)
+                # convert prediction probabilities into single category
+                # val_preds = np.where(val_preds[:,1] > 0.5, 1, 0)
+                val_preds = (val_preds[:,1] > 0.5).astype(int)
+                # get f1 pos
+                method_val = class_utils.precision_recall_fscore_support(y_val[:, 1],val_preds)[2][1]
+                method_arr.append(method_val)
+                val_loss = model_history.history['val_loss'][0]
+                val_loss_arr.append(val_loss)
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_val_index = i
+                if method_val > best_method_val:
+                    # print('in corr > at i = ', i)
+                    best_method_val = method_val
+                    best_method_index = i
+                    model.save_weights(best_method_weights_file)
+            best_method_index_file = models_dir + "{}_{}_{}_{}/best_method_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_method_index) + '.pickle'
+            best_valloss_index_file = models_dir + "{}_{}_{}_{}/best_valloss_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_val_index) + '.pickle'
+            with open(best_method_index_file,'wb') as pickle_file:
+                pickle.dump([best_method_index, best_method_val, method_arr], pickle_file)
+            with open(best_valloss_index_file,'wb') as pickle_file:
+                pickle.dump([best_val_index, best_val_loss, val_loss_arr], pickle_file)
+        elif best_model_method == 'spearman':
+            best_val_loss = 100000.0
+            best_val_index = 0
+            best_corr_val = 0
+            best_corr_index = 0
+            # define file names
+            best_spearman_weights_file = models_dir + "{}_{}_{}_{}/best_spearman_weights.hdf5".format(
+                model_def, set_name, fold, set_num)
+
+            for i in range(num_epochs):
+                # size_batches = 32
+                # num_epochs = 50
+                model_history = model.fit(x=x_train, y=y_train,
+                                          verbose=0,
+                                          # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                          batch_size=size_batches,
+                                          epochs=1,  # set to 1 for use_corr_for_best_model
+                                          validation_data=[x_val, y_val],
+                                          # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                          # callbacks=[best_model_weights, tensorboard],
+                                          )
+
+                # with open('model_history.pickle', 'wb') as pickle_file:
+                #     pickle.dump(model_history.history, pickle_file)
+                # exit()
+                val_preds = model.predict(x_val)
+                # convert prediction probabilities into single category
+                val_preds = np.argmax(val_preds, axis=1)
+                # convert y_val into single category
+                y_val_tmp = np.argmax(y_val, axis=1)
+                preds_df = pd.DataFrame(data=val_preds, columns=['predicted'])
+                preds_df['actual'] = pd.Series(y_val_tmp, index=preds_df.index)
+                corr_val = preds_df.loc[:, ['actual', 'predicted']].corr(
+                    method='spearman').iloc[0][1]
+                if model_history.history['val_loss'][0] < best_val_loss:
+                    best_val_loss = model_history.history['val_loss'][0]
+                    best_val_index = i
+                if corr_val > best_corr_val:
+                    # print('in corr > at i = ', i)
+                    best_corr_val = corr_val
+                    best_corr_index = i
+                    model.save_weights(best_spearman_weights_file)
+            best_spearman_index_file = models_dir + "{}_{}_{}_{}/best_spearman_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_corr_index) + '.pickle'
+            best_valloss_index_file = models_dir + "{}_{}_{}_{}/best_valloss_indx_".format(
+                model_def, set_name, fold, set_num) + str(
+                best_val_index) + '.pickle'
+            with open(best_spearman_index_file, 'wb') as pickle_file:
+                pickle.dump([best_corr_index, best_corr_val], pickle_file)
+            with open(best_valloss_index_file, 'wb') as pickle_file:
+                pickle.dump([best_val_index, best_val_loss], pickle_file)
+
+
+        elif best_model_method == 'val_loss':
+            model_history = model.fit(x=x_train, y=y_train,
+                                      verbose=0,
+                                      # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                      batch_size=size_batches,
+                                      epochs=num_epochs,
+                                      validation_data=[x_val, y_val],
+                                      # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                      # callbacks=[best_model_weights,
+                                      #            tensorboard],
+                                      callbacks=[best_model_weights,
+                                                 tensorboard],
+                                      )
+        else:
+            print('best_model_method not supported: ', best_model_method)
+            return
+
+
+        model.summary()
+
+        model_end_time = datetime.datetime.utcnow()
+
+        # # save model_history for loss analysis
+        # # put in same directory as tensorboard event files
+        # model_history_file = log_dir + '/model_history.pickle'
+        # with open(model_history_file,'wb') as pickle_file:
+        #     pickle.dump(model_history.history,pickle_file)
+
+        print('Memory after training set {} type {} fold {} model {}'.format(set_name, model_type, fold, set_num))
+        print('Model training elapsed time: ' + str(model_end_time - model_start_time))
+        process_report(start_time, current_process)
+
+        # LOAD THE BEST MODEL WEIGHTS
+        # wait a moment to ensure that model weights have written to file system
+        # print('best_weights_file = ',best_weights_file)
+        # with open('best_weights.pickle','wb') as pickle_file:
+        #     pickle.dump(best_weights_file,pickle_file)
+        sleep(1)
+        print("Model weights before loading best: " + str(model.get_weights()[0][0][:4]))
+        if best_model_method == 'auc':
+            try:
+                best_method_weights_file
+            except NameError:
+                print('best_method_weights_file is not defined... ')
+                print('using model from last epoch instead ... ')
+            else:
+                model.load_weights(best_method_weights_file)
+        elif best_model_method == 'f1pos':
+            try:
+                best_method_weights_file
+            except NameError:
+                print('best_method_weights_file is not defined... ')
+                print('using model from last epoch instead ... ')
+            else:
+                model.load_weights(best_method_weights_file)
+        elif best_model_method == 'spearman':
+            try:
+                best_spearman_weights_file
+            except NameError:
+                print('best_spearman_weights_file is not defined... ')
+                print('using model from last epoch instead ... ')
+            else:
+                model.load_weights(best_spearman_weights_file)
+        elif best_model_method == 'val_loss':
+            try:
+                best_weights_file
+            except NameError:
+                print('best_weights_file is not defined... ')
+                print('using model from last epoch instead ... ')
+            else:
+                model.load_weights(best_weights_file)
+        else:
+            print('best_model_method not supported: ', best_model_method)
+            return
+        print("Model weights after loading best: " + str(model.get_weights()[0][0][:4]))
+        
+#######        
+#######       
+#######
+#######
+## this is my code with redundancies eliminated
+
+def fit_model(model, best_model_method, x_train, y_train, x_val, y_val, size_batches,
+              num_epochs, best_model_weights, tensorboard, models_dir, model_def, set_name,
+              fold, set_num, best_weights_file, best_method_weights_file):
+    best_val_loss = 100000.0
+    # best_val_index = 0
+    best_method_val = 0
+    best_method_index = 0
+    val_loss_arr = []
+    method_arr_auc = []
+    method_arr_f1pos = []
+
+    if best_model_method in ['auc', 'f1pos', 'spearman']:
+
+        best_method_weights_file = models_dir + "{}_{}_{}_{}/best_{}_weights.hdf5".format(
+            model_def, set_name, fold, set_num, best_model_method)
+
+        best_method_index_file = models_dir + "{}_{}_{}_{}/best_method_indx_".format(
+            model_def, set_name, fold, set_num) + str(
+            best_method_index) + '.pickle'
+        best_val_index = 0
+
+        for i in range(num_epochs):
+
+            model_history = model.fit(x=x_train, y=y_train,
+                                      verbose=0,  # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                      batch_size=size_batches,
+                                      epochs=1,  # set to 1 for use_corr_for_best_model
+                                      validation_data=[x_val, y_val],
+                                      # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                      # callbacks=[best_model_weights, tensorboard],
+                                      )
+
+            val_preds = model.predict(x_val)
+
+            # 'auc' calculations
+            method_val_auc = class_utils.roc_auc_score(y_val[:, 1],val_preds[:, 1])
+            method_arr_auc.append(method_val_auc)
+
+            # 'f1pos' calculations
+            val_preds_f1pos = (val_preds[:,1] > 0.5).astype(int)
+            method_val_f1pos = class_utils.precision_recall_fscore_support(y_val[:, 1], val_preds_f1pos)[2][1]
+            method_arr_f1pos.append(method_val_f1pos)
+
+            # 'spearman' calculations
+            # convert prediction probabilities into single category
+            val_preds_spearman = np.argmax(val_preds, axis=1)
+            # convert y_val into single category
+            y_val_tmp = np.argmax(y_val, axis=1)
+            preds_df = pd.DataFrame(data=val_preds_spearman, columns=['predicted'])
+            preds_df['actual'] = pd.Series(y_val_tmp, index=preds_df.index)
+            method_val_spearman = preds_df.loc[:, ['actual', 'predicted']].corr(
+                method='spearman').iloc[0][1]
+
+            # val_loss determination (same for all cases)
+            val_loss = model_history.history['val_loss'][0]
+            val_loss_arr.append(val_loss)
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_val_index = i
+
+            # determine which method_val_'method' will be used
+            if best_model_method == 'auc':
+                method_val_tmp = method_val_auc
+                if method_val_tmp > best_method_val:
+                    # print('in corr > at i = ', i)
+                    best_method_val = method_val_tmp
+                    best_method_index = i
+                    model.save_weights(best_method_weights_file)
+            elif best_model_method == 'f1pos':
+                method_val_tmp = method_val_f1pos
+                if method_val_tmp > best_method_val:
+                    # print('in corr > at i = ', i)
+                    best_method_val = method_val_tmp
+                    best_method_index = i
+                    model.save_weights(best_method_weights_file)
+            elif best_model_method == 'spearman':
+                method_val_tmp = method_val_spearman
+                if method_val_tmp > best_method_val:
+                    # print('in corr > at i = ', i)
+                    best_method_val = method_val_tmp
+                    best_method_index = i
+                    model.save_weights(best_method_weights_file)
+
+        with open(best_method_index_file,'wb') as pickle_file:
+            pickle.dump([method_arr_auc, method_arr_f1pos, method_val_tmp, val_loss_arr], pickle_file)
+
+    elif best_model_method == 'val_loss':
+        model_history = model.fit(x=x_train, y=y_train,
+                                  verbose=0,
+                                  # 2 = one log line per epoch, 0 = none, 1 = progress bar
+                                  batch_size=size_batches,
+                                  epochs=num_epochs,
+                                  validation_data=[x_val, y_val],
+                                  # callbacks=[tf_csv_logger, best_model_weights, model_improve],
+                                  # callbacks=[best_model_weights,
+                                  #            tensorboard],
+                                  callbacks=[best_model_weights,
+                                             tensorboard],
+                                  )
+    else:
+        print('best_model_method not supported: ', best_model_method)
+        return
+  
+    if best_model_method in ['auc', 'f1pos', 'spearman']:
+        try:
+            best_method_weights_file
+        except NameError:
+            print('best_method_weights_file is not defined... ')
+            print('using model from last epoch instead ... ')
+        else:
+            model.load_weights(best_method_weights_file)
+    elif best_model_method == 'val_loss':
+        try:
+            best_weights_file
+        except NameError:
+            print('best_weights_file is not defined... ')
+            print('using model from last epoch instead ... ')
+        else:
+            model.load_weights(best_weights_file)
+    else:
+        print('best_model_method not supported: ', best_model_method)
+        return
+
+    return model
